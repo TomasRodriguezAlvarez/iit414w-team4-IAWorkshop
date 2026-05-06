@@ -126,6 +126,10 @@ The dataset covers 2019–2024 only, restricting the model to the current turbo-
 
 ## 7. Team Workflow
 
-**Mon–Tue:** Joaquín implemented the data loading, temporal split logic, feature engineering, the RF+LR ensemble, the Platt calibration mapping, and the what-if scenario cells in the notebook. Martina researched metric justifications, drafted the decision context, documented dataset limitations, and wrote the experiment hypotheses.
+- **Joaquín Rodríguez:** Data loading pipeline, temporal split logic (2019–2021 train / 2022 calibration / 2023–2024 test), leakage audit cell, feature engineering (grid_rank_inv, grid_x_tier, driver_constructor_avg, form_gap, circuit_history_missing), and Random Forest + Logistic Regression model training with Platt calibration mapping.
 
-**Wed (Studio Session):** Final integration of the notebook, execution of the leakage audit cell, documentation of AI interactions in PROMPTS.md, and final verification that the repository runs end-to-end on a clean clone before the 16:20 deadline.
+- **Tomás Solano:** Decision context framing, Chief Strategy Officer use case, primary metric justification (Brier Score vs. binary classification), what-if scenario design (Hamilton/Silverstone and Leclerc/Monaco), and dataset limitation disclosure.
+
+- **Tomás Rodríguez:** Experiment hypotheses for Hito 2 (XGBoost temperature interaction, driver identity features, championship round seasonality), performance reference benchmarking (0.208 grid-rule floor, 0.132 docent reference), calibration curve visualization, and results summary documentation.
+
+Final integration of all notebook cells, verification of end-to-end execution on a clean clone, documentation of AI interactions in PROMPTS.md, and cross-team review before the 16:20 deadline.
