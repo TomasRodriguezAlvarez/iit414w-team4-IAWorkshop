@@ -1,58 +1,132 @@
-1. Decision Context
+# Hito 1 — Problem Framing + Baseline
 
-Who are we supporting?: The Chief Strategy Officer for a mid-to-top tier team (e.g., Mercedes or Aston Martin).
+## 1. Decision Context
 
-When is the decision made?: Sunday morning before the race, with real-time adjustments during the first 15–20 laps.
+We are supporting the race strategy team of a mid-to-top tier Formula 1 team. The decision is made before the race, mainly on Sunday morning, with possible adjustments during the first part of the race.
 
-Decision focus: Optimization of the number of pit stops (n_stops) and the tire sequence (compound_sequence) to maximize the probability of a points-scoring finish.
+The tool supports strategy planning by estimating the probability that a driver finishes in the Top 10. The main use case is comparing how different strategic assumptions may affect the chance of scoring points.
 
-2. Target & Primary Metric
-Target: is_top10.
+This is not a fully automated race strategy system. It is a decision-support baseline that helps the strategist reason about risk, probability, and scenario comparison.
 
-Primary Metric: Brier Score.
+---
 
-Justification: In F1 strategy, binary classification (Yes/No) is insufficient for high-stakes risk management. We need precise probability estimates to weigh the "gamble" of an extra pit stop. The Brier Score penalizes overconfident yet incorrect predictions, which is critical: predicting a 95% chance of a Top 10 finish and failing is a catastrophic failure for a strategist. We also track Log Loss and ROC-AUC for calibration and discrimination monitoring.
+## 2. Target & Primary Metric
 
-3. Baseline Plan
-Model: Ensemble of a Random Forest and a Logistic Regression. The Random Forest and Logistic components are trained on pre-race features (2019–2021), raw ensemble scores are combined (70% RF + 30% LR), and the combined score is Platt-calibrated using the 2022 calibration block. We also report individually Platt-calibrated RF and LR results for reference.
+The locked target is:
 
-Features: a set of pre-race observables including `grid_position` (and `qualifying_position` when available), engineered grid features (`grid_rank_inv`, `grid_x_tier`), recent form (`driver_prior3_avg_finish`, `constructor_prior3_avg_finish`), `driver_circuit_prior_avg`, and categorical features like `constructor_tier`, `circuit_type`, and `constructor_name`.
+`is_top10`
 
-F1 Rationale: Starting position is the single strongest pre-race predictor, but combining it with short-term form and team-tier information improves calibration and discrimination while remaining leakage-safe.
+This target indicates whether a driver finished inside the Top 10.
 
-Performance: On the untouched 2023–2024 test set the notebook reports:
-- Grid-rule baseline (assignment floor): Brier = 0.208
-- Logistic baseline (uncalibrated): Brier ≈ 0.134
-- Logistic (Platt-calibrated): Brier ≈ 0.135
-- Random Forest (Platt-calibrated): Brier ≈ 0.132
-- RF + LR ensemble (Platt-calibrated): Brier ≈ 0.132 (best by Brier)
+The primary metric is **Brier Score**, because the project depends on calibrated probabilities, not only correct classifications. In F1 strategy, it is important to know whether a Top 10 result is estimated as 55%, 75%, or 90%, because different probabilities imply different levels of risk.
 
-The ensemble matches the calibrated docent reference Brier (0.132) while using only pre-race features and the locked temporal split.
+We also report **Log Loss** and **ROC-AUC** to monitor probability quality and ranking performance.
 
-4. What-if Comparison Plan
-To validate the model's utility as a strategy tool, we will simulate two specific scenarios:
+---
 
-Scenario A (Stop Count Strategy): Lewis Hamilton (Mercedes) at the British GP (Silverstone) starting P7. Compare P(is_top10) for a 1-stop strategy (M-H) versus a 2-stop strategy (M-M-H).
+## 3. Baseline Plan
 
-Scenario B (Compound Choice): Charles Leclerc (Ferrari) at the Monaco GP starting P4. Compare P(is_top10) for an aggressive "Soft-start" stint versus a conservative "Hard-start" long stint.
+The notebook implements the required locked temporal split:
 
-5. Acknowledgment of Dataset Limitations
-We identify and account for the following limitations in our framing:
+- Train: 2019–2021
+- Calibration: 2022
+- Test: 2023–2024
 
-Strategy Features as Scenario Inputs (Leakage): Variables like n_stops and stint_lengths are post-race observations. We declare them as scenario inputs (user-controlled "what-if" variables) rather than pre-race signals to avoid invalid model leakage.
+The baseline pipeline starts with a simple grid-rule heuristic and then evaluates stronger leakage-safe models using only pre-race information.
 
-Incomplete Qualifying Data: Some detailed qualifying telemetry (e.g., `qualifying_time_s`) is missing in this build. The notebook uses `qualifying_position` when available and falls back to `grid_position` where needed (and the grid-rule baseline similarly falls back). This proxying may omit nuances such as late grid penalties or post-qualifying penalties not reflected in the raw starting order.
+The final best model in the notebook is:
 
-Temporal Scope: Data starts in 2019, which captures the current turbo-hybrid era but limits the model's exposure to historical shifts in tire degradation patterns.
+`ensemble_rf70_lr30_platt_calibrated`
 
-6. Experiments Planned (Hito 2)
-Non-Linear Modeling (XGBoost): Hypothesis: Gradient-boosted trees will better capture the non-linear interaction between track temperature (avg_track_temp) and tire life compared to a linear baseline.
+This model combines:
 
-Momentum Engineering: Hypothesis: Including the constructor_prior3_avg_finish will help the model account for mid-season technical upgrades and team momentum.
+- 70% Random Forest probability
+- 30% Logistic Regression probability
+- Platt calibration using only the 2022 calibration block
 
-Weather Sensitivity Audit: Hypothesis: The weight of grid_position decreases in wet weather conditions (weather_actual = 'wet'), increasing the relative importance of strategy choice.
+The pre-race features include grid/qualifying position, constructor tier, circuit type, constructor name, and recent driver/constructor performance indicators. These are defensible because they are known before the race and reflect F1 logic: starting position, team strength, and recent form strongly influence the probability of a Top 10 finish.
 
-7. Team Workflow
-Mon – Tue: Joaquín implemented the data loading, temporal split logic (2019–2021 / 2022 / 2023–2024), and the Platt calibration mapping in the notebook. [Partner Name] researched metric justifications and drafted the decision context.
+On the untouched 2023–2024 test set, the notebook reports:
 
-Wed (Studio Session): Final integration of the notebook, execution of the leakage audit cell, and documentation of AI interactions in PROMPTS.md. Final verification that the repository runs on a clean clone before the 16:20 deadline.
+| Model | Brier | Log Loss | ROC-AUC |
+|---|---:|---:|---:|
+| Grid-rule baseline | 0.160 | 0.494 | 0.839 |
+| Logistic baseline | 0.134 | 0.427 | 0.887 |
+| Logistic + Platt | 0.135 | 0.429 | 0.887 |
+| Random Forest + Platt | 0.132 | 0.424 | 0.887 |
+| RF70/LR30 Ensemble + Platt | 0.132 | 0.422 | 0.889 |
+
+The best model matches the calibrated docent reference Brier score of 0.132 and comes close to the docent ROC-AUC of 0.892.
+
+---
+
+## 4. What-if Comparison Plan
+
+For Hito 1, the baseline model is trained only with pre-race features. For later strategy comparison, the tool can be extended to simulate scenario inputs such as pit stop count and tire sequence.
+
+Two concrete scenarios are:
+
+**Scenario A — Stop count strategy**
+
+Lewis Hamilton at the British Grand Prix, starting P7.
+
+Compare:
+
+- 1-stop strategy: Medium → Hard
+- 2-stop strategy: Medium → Medium → Hard
+
+Goal: estimate whether the extra stop improves or reduces the probability of finishing Top 10.
+
+**Scenario B — Compound choice strategy**
+
+Charles Leclerc at the Monaco Grand Prix, starting P4.
+
+Compare:
+
+- aggressive soft-tire opening stint
+- conservative hard-tire opening stint
+
+Goal: estimate whether early pace or track-position protection is more valuable for Top 10 probability.
+
+---
+
+## 5. Dataset Limitations
+
+We acknowledge the following limitations:
+
+1. The dataset starts in 2019, so the model does not learn from older F1 seasons or previous regulation eras.
+
+2. Some qualifying information is incomplete. For example, `qualifying_time_s` is not usable, so the model relies more heavily on grid and qualifying position.
+
+3. Strategy features such as `n_stops`, `compound_sequence`, and `stint_lengths` are post-race observations in the raw data. We do not use them as ordinary pre-race predictors in the baseline. They are treated only as future scenario inputs for what-if analysis.
+
+These limitations mean the model should be interpreted as a baseline decision-support tool, not as a deployment-ready strategy engine.
+
+---
+
+## 6. Experiments Planned for Hito 2
+
+1. **Gradient boosting model**
+
+Hypothesis: a boosted tree model may capture non-linear interactions between grid position, constructor strength, and circuit type better than the current baseline.
+
+2. **Additional momentum features**
+
+Hypothesis: rolling driver and constructor performance features may improve calibration when teams improve or decline during a season.
+
+3. **Weather and race-condition audit**
+
+Hypothesis: the importance of grid position may change under wet or disrupted race conditions, so model performance should be checked separately for those cases.
+
+---
+
+## 7. Team Workflow
+
+For this milestone, the work was divided into:
+
+- implementing the notebook and temporal split,
+- building the leakage audit,
+- testing the baseline models,
+- writing the framing document,
+- documenting AI assistance in `PROMPTS.md`,
+- and checking that the repository runs end-to-end before submission.

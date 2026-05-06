@@ -1,146 +1,126 @@
 # PROMPTS.md
 
-## AI Interaction 1 — Leakage framing and temporal validation
+## AI Interaction 1
 
 ### Context
-We were building the Hito 1 baseline notebook for the F1 Race Strategy Advisor capstone. The assignment imposed strict temporal splits (train 2019–2021, calibration 2022, test 2023–2024) and emphasized avoiding leakage from post-race strategy variables.
+We were starting the Hito 1 notebook and needed to understand the assignment requirements, especially the locked temporal split, leakage rules, and acceptable baseline design.
 
 ### Prompt
-> Review the assignment instructions and explain which variables should be treated as:
-> - pre-race features,
-> - scenario inputs,
-> - target leakage / post-race observations.
->
-> Also explain how the temporal split and calibration block should be implemented correctly.
+> Explain the assignment requirements and identify:
+> - the correct temporal split,
+> - which variables are leakage,
+> - which variables can be used as pre-race features,
+> - and what kind of baseline is acceptable for Hito 1.
 
 ### Output
-The AI identified:
-- acceptable pre-race features such as:
-  - `qualifying_position`
-  - `grid_position`
-  - `constructor_tier`
-  - `driver_prior3_avg_finish`
-  - `constructor_prior3_avg_finish`
-- strategy variables that must be framed as scenario inputs:
-  - `n_stops`
-  - `compound_sequence`
-  - `stint_lengths`
-- outcome/leakage variables that should never be used as predictors:
+The AI explained that the required split was:
+- train: 2019–2021
+- calibration: 2022
+- test: 2023–2024
+
+It also identified:
+- post-race leakage variables such as:
   - `finish_position`
   - `points`
   - `is_top10`
   - `dnf`
   - `status`
+- strategy variables that should only be treated as scenario inputs:
+  - `n_stops`
+  - `compound_sequence`
+  - `stint_lengths`
+- acceptable pre-race features such as:
+  - `grid_position`
+  - `qualifying_position`
+  - `constructor_tier`
+  - `driver_prior3_avg_finish`
 
-The AI also recommended:
-- train = 2019–2021
-- calibration = 2022 only
-- test = 2023–2024 untouched
-
-and explained that calibration should be learned only from the 2022 block.
+The AI also suggested using Logistic Regression as a simple F1-defendable baseline.
 
 ### Validation
-We manually checked the notebook feature lists to confirm:
-- no target leakage columns were included,
+We manually checked the notebook feature lists and verified that:
+- leakage variables were excluded,
 - the split matched the assignment exactly,
-- calibration used only the 2022 data.
+- and calibration used only the 2022 block.
 
 ### Adaptations
-We expanded the leakage audit section into a dedicated notebook cell showing:
-- target/outcome columns,
-- scenario-input columns,
-- audit/post-race columns.
-
-We also clarified in `framing.md` that strategy variables are treated as user-controlled scenario inputs rather than magically known pre-race information.
+We added a dedicated leakage audit section in the notebook to explicitly separate:
+- pre-race features,
+- scenario-input variables,
+- and post-race audit columns.
 
 ### Final Decision
-We adopted the leakage-safe framing and preserved the locked temporal split exactly as specified in the assignment.
+We adopted the locked temporal split and used only leakage-safe pre-race variables in the predictive baseline.
 
 ---
 
-## AI Interaction 2 — Baseline modeling and calibration strategy
+## AI Interaction 2
 
 ### Context
-After implementing a simple grid-rule heuristic baseline, we needed a stronger but still defendable Hito 1 baseline using only pre-race features.
+After implementing the first logistic baseline, we wanted to improve performance while remaining simple and leakage-safe.
 
 ### Prompt
-> Suggest a simple but F1-defendable baseline model for predicting `is_top10`.
->
-> The model must:
-> - avoid leakage,
-> - respect the locked temporal split,
-> - support probability calibration,
-> - and remain interpretable enough for Hito 1.
+> Suggest simple improvements to the baseline model while keeping the notebook explainable and consistent with the assignment requirements.
 
 ### Output
 The AI suggested:
-- Logistic Regression as a transparent baseline,
-- optional Random Forest experimentation,
-- Platt calibration using only the 2022 block,
-- evaluation using:
-  - Brier score,
-  - Log loss,
-  - ROC-AUC,
-  - calibration curves.
+- trying Random Forest in addition to Logistic Regression,
+- using Platt calibration on the 2022 block,
+- and combining both models into a weighted ensemble.
 
-It also suggested combining models into a calibrated ensemble if the results remained leakage-safe and reproducible.
+It also recommended evaluating:
+- Brier Score,
+- Log Loss,
+- ROC-AUC,
+- and calibration curves.
 
 ### Validation
-We executed:
-- the grid-rule baseline,
-- logistic regression,
-- Platt-calibrated logistic regression,
-- calibrated Random Forest,
-- calibrated RF + LR ensemble.
+We implemented:
+- Logistic Regression,
+- Random Forest,
+- Platt calibration,
+- and an RF/LR ensemble.
 
 We verified that:
-- all models used only approved pre-race features,
-- calibration used only 2022,
-- evaluation was performed only once on 2023–2024.
-
-The resulting ensemble achieved approximately:
-- Brier ≈ 0.132
-- ROC-AUC ≈ 0.892
-
-which matched the docent reference baseline.
+- only pre-race features were used,
+- the test set remained untouched until final evaluation,
+- and calibration used only the 2022 split.
 
 ### Adaptations
-We adjusted:
-- feature engineering,
-- preprocessing,
-- ensemble weighting,
-- and calibration handling.
+We experimented with different ensemble weights and kept the final configuration:
 
-We also retained the simpler logistic baseline in the notebook for transparency and comparison against the stronger ensemble approach.
+`ensemble_rf70_lr30_platt_calibrated`
+
+because it produced the best Brier score on the untouched test set.
 
 ### Final Decision
-We selected the calibrated RF + LR ensemble as the main Hito 1 baseline because it:
-- matched the docent reference performance,
+We selected the calibrated RF/LR ensemble as the final Hito 1 baseline because it:
+- matched the docent Brier baseline,
 - remained leakage-safe,
-- used only pre-race information,
-- and produced calibrated probability outputs appropriate for strategy-risk decisions.
+- and produced calibrated probabilities suitable for strategy-risk estimation.
 
 ---
 
-## AI Interaction 3 — Rejected / modified suggestion
+## AI Interaction 3
 
 ### Context
-During experimentation, AI suggested including strategy variables directly in the predictive model.
+During experimentation, we considered using strategy variables directly as predictors.
 
 ### Prompt
 > Would including `n_stops`, `compound_sequence`, and `stint_lengths` improve predictive performance?
 
 ### Output
-The AI noted that these variables could improve predictive power because they are strongly associated with race outcomes.
+The AI explained that those variables would likely improve predictive performance because they are strongly related to race outcome.
 
 ### Validation
-After reviewing the assignment leakage rules, we determined that directly treating these variables as ordinary predictors would create an invalid framing unless explicitly handled as scenario inputs.
+After reviewing the assignment leakage policy, we confirmed that these variables are post-race observations in the raw dataset.
 
 ### Adaptations
-Instead of using them as standard pre-race predictors, we:
-- excluded them from the baseline predictive pipeline,
-- documented them as scenario-input variables,
-- and moved their use into the what-if strategy framing.
+Instead of using them as standard predictive features, we documented them as:
+- scenario-input variables,
+- intended for future what-if comparisons.
+
+They were excluded from the Hito 1 predictive pipeline.
 
 ### Final Decision
-We rejected the original recommendation to use strategy variables as ordinary predictive features and instead followed the assignment’s leakage-safe scenario framing.
+We rejected the use of strategy variables as ordinary predictors and kept the final baseline restricted to leakage-safe pre-race information.
