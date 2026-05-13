@@ -57,31 +57,31 @@ Select **Kernel → Restart & Run All**. The notebook is self-contained and runs
 
 ## Locked design decisions
 
-| Decision | Value |
-|---|---|
-| Primary target (Hito 1 carry-over) | `is_top10` |
-| Expansion target (Hito 2) | `is_top5` |
-| Train | 2019, 2020, 2021 |
-| Calibration | 2022 (Platt scaling only — never for model selection) |
-| Test | 2023, 2024 (accessed once, at final evaluation only) |
+| Decision                           | Value                                                 |
+| ---------------------------------- | ----------------------------------------------------- |
+| Primary target (Hito 1 carry-over) | `is_top10`                                            |
+| Expansion target (Hito 2)          | `is_top5`                                             |
+| Train                              | 2019, 2020, 2021                                      |
+| Calibration                        | 2022 (Platt scaling only — never for model selection) |
+| Test                               | 2023, 2024 (accessed once, at final evaluation only)  |
 
 ---
 
 ## Hito 2 notebook sections
 
-| Section | What it does |
-|---|---|
-| 1. Load data + split | Reads CSV, applies locked temporal split, verifies both targets |
-| 2. Feature engineering | Same pre-race features as Hito 1; applied to all splits |
-| 3. Shared helpers | `evaluate_binary()`, `fit_binary_ensemble()`, `platt_calibrate()` |
-| 4. `is_top10` (carry-over) | Re-trains Hito 1 model; reports Brier 0.132, ROC-AUC 0.889 |
-| 5. `is_top5` (expansion) | Trains same architecture on expansion target; reports Brier 0.085, ROC-AUC 0.940 |
-| 6. Side-by-side comparison | Compares both models against their respective heuristic baselines |
-| 7. Calibration curves | Predicted vs observed rate for both targets (side-by-side figure) |
-| 8. Error analysis | Brier sliced by strategy_type, circuit_type, constructor_tier, weather_actual |
-| 9. Cross-slice | strategy_type × circuit_type pivot for both targets |
-| 10. What-if comparison | Hamilton Silverstone 2024: the P(top5) drop that is_top10 cannot see |
-| 11. Summary | Final metric table for both targets |
+| Section                    | What it does                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| 1. Load data + split       | Reads CSV, applies locked temporal split, verifies both targets                  |
+| 2. Feature engineering     | Same pre-race features as Hito 1; applied to all splits                          |
+| 3. Shared helpers          | `evaluate_binary()`, `fit_binary_ensemble()`, `platt_calibrate()`                |
+| 4. `is_top10` (carry-over) | Re-trains Hito 1 model; reports Brier 0.132, ROC-AUC 0.889                       |
+| 5. `is_top5` (expansion)   | Trains same architecture on expansion target; reports Brier 0.085, ROC-AUC 0.940 |
+| 6. Side-by-side comparison | Compares both models against their respective heuristic baselines                |
+| 7. Calibration curves      | Predicted vs observed rate for both targets (side-by-side figure)                |
+| 8. Error analysis          | Brier sliced by strategy_type, circuit_type, constructor_tier, weather_actual    |
+| 9. Cross-slice             | strategy_type × circuit_type pivot for both targets                              |
+| 10. What-if comparison     | Hamilton Silverstone 2024: the P(top5) drop that is_top10 cannot see             |
+| 11. Summary                | Final metric table for both targets                                              |
 
 ---
 
@@ -98,13 +98,13 @@ This recommendation is structurally invisible from a single target. See `whatif_
 
 ## Leakage policy
 
-| Category | Columns | Status |
-|---|---|---|
-| Pre-race features | `grid_position`, `qualifying_position`, `constructor_tier`, `circuit_type`, `constructor_name`, `driver_prior3_avg_finish`, `constructor_prior3_avg_finish`, `driver_circuit_prior_avg`, `round` | ✅ Used as predictors |
-| Engineered features | `grid_rank_inv`, `grid_x_tier`, `driver_constructor_avg`, `form_gap`, `circuit_history_missing`, `tier_num` | ✅ Derived from pre-race inputs |
-| Scenario inputs | `n_stops`, `compound_sequence`, `stint_lengths` | ⚠️ What-if labels only |
-| Audit / post-race | `safety_car_periods`, `weather_actual`, `avg_track_temp`, pit timing columns | 🔍 Error slicing only |
-| Target leakage | `finish_position`, `points`, `is_top10`, `is_top5`, `dnf`, `status` | ❌ Never predictors |
+| Category            | Columns                                                                                                                                                                                          | Status                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| Pre-race features   | `grid_position`, `qualifying_position`, `constructor_tier`, `circuit_type`, `constructor_name`, `driver_prior3_avg_finish`, `constructor_prior3_avg_finish`, `driver_circuit_prior_avg`, `round` | Used as predictors           |
+| Engineered features | `grid_rank_inv`, `grid_x_tier`, `driver_constructor_avg`, `form_gap`, `circuit_history_missing`, `tier_num`                                                                                      | Derived from pre-race inputs |
+| Scenario inputs     | `n_stops`, `compound_sequence`, `stint_lengths`                                                                                                                                                  | What-if labels only          |
+| Audit / post-race   | `safety_car_periods`, `weather_actual`, `avg_track_temp`, pit timing columns                                                                                                                     | Error slicing only           |
+| Target leakage      | `finish_position`, `points`, `is_top10`, `is_top5`, `dnf`, `status`                                                                                                                              | Never predictors             |
 
 ---
 
