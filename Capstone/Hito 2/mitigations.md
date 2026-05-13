@@ -41,8 +41,8 @@ Each risk is connected to a specific failure mode identified in `error_analysis.
 **Consequence:** The model systematically underestimates P(top5) for the dominant constructor (Red Bull in 2023) and overestimates for others. This is the most severe systematic bias in the `is_top5` target.
 
 **Mitigation:**
-1. **Constructor-specific features:** Replace the three-category `constructor_tier` with `constructor_name` rolling averages at a finer grain — e.g., a constructor-season-level average finish rather than a static tier label. This is already partially addressed by including `constructor_name` as a categorical feature, but the rolling average for the dominant constructor still lags mid-season developments.
-2. **Momentum slope feature:** Compute the slope of the constructor's average finish over the last 5 races (not just the 3-race average level). A constructor improving from P5 average to P2 average over 5 races should receive a different probability than one that has been stable at P3.
+1. **Constructor-season performance split:** Instead of a single `constructor_tier` label per season, compute a per-constructor rolling average finish over the last 8 races (wider than the current 3-race window). This gives Red Bull a different effective tier from Ferrari even within the "front" label, based on actual recent pace rather than a categorical assignment.
+2. **Intra-tier ranking feature:** Add a `constructor_rank_in_tier` feature derived from each constructor's average qualifying position relative to others in the same tier — distinguishing the P1-average car from the P5-average car within the front tier. This is a pre-race observable computed from the training seasons only.
 
 ---
 
@@ -55,8 +55,8 @@ Each risk is connected to a specific failure mode identified in `error_analysis.
 **Consequence:** The model will produce confidently wrong probabilities during a team's performance transition. A McLaren driver mid-2023 would receive a "midfield" probability when the car was approaching front-tier pace.
 
 **Mitigation:**
-1. **Slope feature (same as Risk 3 mitigation):** The direction of change in the rolling average carries information the level alone does not.
-2. **Season-week interaction:** Add a `round × constructor_tier` interaction term to allow the model to learn that early-season tier labels are more reliable than late-season ones, where development has had more time to alter the competitive order.
+1. **Momentum slope feature (driver-level):** Compute the slope of each *driver's* average finish over the last 5 races — not just the level. A McLaren driver improving from P10-average to P5-average over 5 races should receive a higher probability than one stable at P7, even if both have the same 3-race rolling average at the snapshot date. This is the driver-specific equivalent of Risk 3's constructor-level mitigation, and the two features are additive.
+2. **Season-phase interaction:** Add a `round_bucket` (early = rounds 1–8, mid = 9–16, late = 17+) interacted with `constructor_tier`. This allows the model to learn that early-season tier labels are more reliable than late-season ones, where development has had more time to shift the competitive order — directly addressing the Aston Martin / McLaren transition problem in 2023.
 
 ---
 

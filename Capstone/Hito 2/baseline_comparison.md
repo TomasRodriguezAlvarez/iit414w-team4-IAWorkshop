@@ -3,6 +3,8 @@
 All metrics computed on the untouched 2023–2024 test set (889 rows).
 The same locked temporal split applies to both targets: train 2019–2021, calibration 2022 (Platt scaling only), test 2023–2024.
 
+> **Reproducibility note:** The numbers in this document were recorded from a single end-to-end run of `hito2_modeling.ipynb`. Because the Random Forest uses `random_state=42`, results are deterministic and will reproduce exactly on a clean clone. If you observe minor floating-point differences (±0.0001), these are rounding display differences — the underlying metrics are stable.
+
 ---
 
 ## Target 1: `is_top10` (carry-over from Hito 1)

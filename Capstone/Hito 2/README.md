@@ -77,8 +77,8 @@ Select **Kernel → Restart & Run All**. The notebook is self-contained and runs
 | 4. `is_top10` (carry-over) | Re-trains Hito 1 model; reports Brier 0.132, ROC-AUC 0.889 |
 | 5. `is_top5` (expansion) | Trains same architecture on expansion target; reports Brier 0.085, ROC-AUC 0.940 |
 | 6. Side-by-side comparison | Compares both models against their respective heuristic baselines |
-| 7. Calibration curves | Predicted vs observed rate for both targets |
-| 8. Error analysis | Brier sliced by strategy_type, circuit_type, constructor_tier, weather |
+| 7. Calibration curves | Predicted vs observed rate for both targets (side-by-side figure) |
+| 8. Error analysis | Brier sliced by strategy_type, circuit_type, constructor_tier, weather_actual |
 | 9. Cross-slice | strategy_type × circuit_type pivot for both targets |
 | 10. What-if comparison | Hamilton Silverstone 2024: the P(top5) drop that is_top10 cannot see |
 | 11. Summary | Final metric table for both targets |

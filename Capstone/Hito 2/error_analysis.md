@@ -88,3 +88,15 @@ Both `is_top10` and `is_top5` are analyzed side-by-side in each slice.
 | Front-tier, positions 3–6 | top5 severely | Tier label too coarse; misses intra-tier gaps | Driver-specific or constructor-specific features |
 | Midfield volatility | top10 | Mid-season car development not captured by 3-race rolling avg | Longer rolling window; momentum slope feature |
 | Wet weather | both | No wet-pace feature; uses dry-race form | Pre-race weather forecast feature (scenario input) |
+
+---
+
+## Calibration assessment (both targets)
+
+Calibration curves are produced in `hito2_modeling.ipynb` Section 7. Key observations:
+
+**`is_top10`:** The Platt-calibrated ensemble is well-calibrated across the full probability range (0.1–0.95). The largest deviation from the diagonal occurs in the 0.7–0.85 band, where the model slightly underestimates the observed Top 10 rate. This band corresponds predominantly to midfield drivers starting P5–P10 — consistent with the midfield volatility failure mode identified in Slice 3.
+
+**`is_top5`:** Calibration is tighter than `is_top10` at the extremes (near 0 and near 1) because the target is more concentrated among front-tier starters. The primary miscalibration region is 0.5–0.75, where front-tier drivers starting P4–P7 receive predicted probabilities slightly above their observed top-5 rate. This is again consistent with the front-tier intra-tier gap identified in Slice 3 — the model over-predicts for non-dominant front-tier cars in this range.
+
+**Comparison between targets:** `is_top5` has better calibration (tighter diagonal) than `is_top10` despite having fewer positive training examples, because the positive class is more concentrated among a predictable subset (front-tier, front-grid drivers). This does not mean the model is more useful for `is_top5` decisions — it means the model is capturing a simpler pattern (tier dominance) rather than the more complex midfield competition that `is_top10` must handle.
